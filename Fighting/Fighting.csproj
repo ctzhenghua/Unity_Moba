@@ -79,11 +79,29 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\DoorController.cs" />
+    <Compile Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Scripts\CameraController.cs" />
+    <Compile Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Scripts\IdleChanger.cs" />
+    <Compile Include="Assets\_scripts\UI\hud\hudFollow.cs" />
+    <Compile Include="Assets\_scripts\UI\hud\hudSorter.cs" />
+    <Compile Include="Assets\_scripts\animation\animationPlayer.cs" />
     <Compile Include="Assets\_scripts\camera\camerFollow.cs" />
     <Compile Include="Assets\_scripts\camera\cameraFollow_Raycast.cs" />
+    <Compile Include="Assets\_scripts\camera\cameraFollow_Seperated.cs" />
     <Compile Include="Assets\_scripts\input\inputController.cs" />
+    <Compile Include="Assets\_scripts\input\skillButtonAction.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_akarami_blend.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_eye.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_eye_blend.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_eyelash_blend.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_fuku.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_fuku_ds.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_hada.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_hada_blend.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_hair.shader" />
+    <None Include="Assets\FightingUnityChan_FreeAsset\FightingUnityChan_FreeAsset\Models\UnityChanShader\Shader\Unitychan_chara_hair_ds.shader" />
     <None Include="Assets\_shader\dissolve.shader" />
     <None Include="Assets\_shader\transparent.shader" />
     <None Include="Assets\_shader\xRay.shader" />
