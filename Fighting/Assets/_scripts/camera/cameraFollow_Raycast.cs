@@ -37,7 +37,7 @@ public class cameraFollow_Raycast :MonoBehaviour
         m_Offset_Down = m_Offset_Original - transform.position;
         m_Offset_Forword = m_Player.position - m_Offset_Original;
         m_Offset = m_Offset_Down + m_Offset_Forword;
-        m_Distance_CameraToPlayer = m_Offset.magnitude-0.5f;
+        m_Distance_CameraToPlayer = m_Offset.magnitude;
 
         m_Layer = 1 << 8;
     }
@@ -52,7 +52,8 @@ public class cameraFollow_Raycast :MonoBehaviour
         m_Offset_Forword = m_Player.forward * m_Offset_Forword_Distance;
         m_Offset_Original = -m_Offset_Forword + m_Player.position;
         Vector3 cameraTargetPosition = new Vector3(m_Offset_Original.x, m_Offset_Down_Distance + m_Offset_Original.y, m_Offset_Original.z);
-        transform.position = Vector3.Lerp(transform.position, cameraTargetPosition, Time.deltaTime * 4);
+
+        transform.position = Vector3.Lerp(transform.position, cameraTargetPosition, Time.deltaTime * 10);
         transform.LookAt(m_Player);
         m_Ray_CameraToPlayer = new Ray(transform.position, m_Player.position - transform.position);
 
