@@ -1,0 +1,26 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+
+// 自动门
+public class DoorController : MonoBehaviour {
+    [SerializeField]
+    private Animation anim;
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!anim.IsPlaying("openDoor"))
+        {
+            anim.Play("openDoor");
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!anim.IsPlaying("closeDoor"))
+        {
+            anim.Play("closeDoor");
+        }
+    }
+}
