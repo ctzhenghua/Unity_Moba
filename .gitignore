@@ -1,5 +1,7 @@
 /Fighting/Temp/
 /Fighting/Library/
 /Fighting/Packages/
+/Fighting/obj/
+/Fighting/.vs/
 Assembly-CSharp.csproj
 Fighting.sln
