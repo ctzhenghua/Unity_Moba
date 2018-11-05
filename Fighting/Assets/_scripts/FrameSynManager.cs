@@ -13,14 +13,26 @@ namespace FrameSyn
 		private List<FrameSynAgentBase> m_FrameSynAgentList;
 		private List<ControlAgentBase> m_ContolAgentList;
 		private bool m_IsStart = false;
-		private Dictionary<ControlAgentBase, FrameControlerDataBase> m_ControlFrameObjCDList;
+		private Dictionary<ControlAgentBase, FrameControlDataBase> m_ControlFrameObjCDList;
 		private int m_ForecastFrameNum = 0;
 		private Dictionary<int, FrameObjSBase> m_ForecastFrameObjSDic;
 		private float m_LastHandleFrameTime = 0;
 		private float m_LastSendContorlTime = 0;
-		private Action<Dictionary<ControlAgentBase, FrameControlerDataBase>> m_OnSendContorl;
+		private Action<Dictionary<ControlAgentBase, FrameControlDataBase>> m_OnSendContorl;
 
 		#region  属性
+		public bool IsStart
+		{
+			set
+			{
+				m_IsStart = value;
+			}
+			get
+			{
+				return m_IsStart;
+			}
+		}
+
 		public int ForecastFrameNum
 		{
 			set
@@ -45,7 +57,7 @@ namespace FrameSyn
 			}
 		}
 
-		public Action<Dictionary<ControlAgentBase, FrameControlerDataBase>> OnSendContorl
+		public Action<Dictionary<ControlAgentBase, FrameControlDataBase>> OnSendContorl
 		{
 			set
 			{
@@ -149,13 +161,13 @@ namespace FrameSyn
 		private void CommonHandleFrameImp(FrameObjSBase frameObjS)
 		{
 			//先进行操作帧处理
-			frameObjS.ControlerDataList.ForEach(controlerData =>
+			frameObjS.ControlDataList.ForEach(controlData =>
 			{
 				m_ContolAgentList.ForEach(agent =>
 				{
-					if (agent.IsCanControl(controlerData))
+					if (agent.IsCanControl(controlData))
 					{
-						agent.HandlerControlData(controlerData);
+						agent.HandlerControlData(controlData);
 					}
 				});
 			});
@@ -173,7 +185,7 @@ namespace FrameSyn
 		/// 玩家的每次操作都调用这个创建一个操作帧,一个逻辑帧内只能有一次操作
 		/// </summary>
 		/// <param name="controlFrame"></param>
-		public void CreateContorlFrame(ControlAgentBase controlAgent, FrameControlerDataBase controlFrame)
+		public void CreateContorlFrame(ControlAgentBase controlAgent, FrameControlDataBase controlFrame)
 		{
 			if (!m_ControlFrameObjCDList.ContainsKey(controlAgent))
 				m_ControlFrameObjCDList.Add(controlAgent, controlFrame);
@@ -201,8 +213,8 @@ namespace FrameSyn
 						FrameObjSBase forcastFrameObjS = m_FrameObjSDic[serverFrameIndex - 1];
 						foreach (var controlFrameObj in m_ControlFrameObjCDList)
 						{
-							forcastFrameObjS.ControlerDataList.RemoveAll(conrolData =>controlFrameObj.Key.IsCanControl(conrolData));
-							forcastFrameObjS.ControlerDataList.Add(controlFrameObj.Value);
+							forcastFrameObjS.ControlDataList.RemoveAll(conrolData =>controlFrameObj.Key.IsCanControl(conrolData));
+							forcastFrameObjS.ControlDataList.Add(controlFrameObj.Value);
 						}
 
 						m_ForecastFrameObjSDic.Add(m_CurrentFrameIndex, forcastFrameObjS);

@@ -6,23 +6,23 @@ namespace FrameSyn
 	/// </summary>
 	public abstract class FrameObjSBase
 	{
-		private List<FrameControlerDataBase> m_ControlerDataList;
+		private List<FrameControlDataBase> m_ControlDataList;
 
 		public int FrameIndex { protected set; get; }
 		public int ArriveTime { protected set; get; }
-		public List<FrameControlerDataBase> ControlerDataList { get { return m_ControlerDataList; } }
+		public List<FrameControlDataBase> ControlDataList { get { return m_ControlDataList; } }
 
 		abstract public bool CompareTo(FrameObjSBase frameObj);
-		public void AddControlerData(FrameControlerDataBase controlerData)
+		public void AddControlData(FrameControlDataBase controlData)
 		{
-			m_ControlerDataList.Add(controlerData);
+			m_ControlDataList.Add(controlData);
 		}
 	}
 
 	/// <summary>
 	/// 每个玩家的操作数据封装，需要外部继承
 	/// </summary>
-	public abstract class FrameControlerDataBase
+	public abstract class FrameControlDataBase
 	{
 		
 	}
@@ -37,7 +37,7 @@ namespace FrameSyn
 
 	public interface ControlAgentBase
 	{
-		bool IsCanControl(FrameControlerDataBase frameObj);
-		void HandlerControlData(FrameControlerDataBase controlData);
+		bool IsCanControl(FrameControlDataBase frameObj);
+		void HandlerControlData(FrameControlDataBase controlData);
 	}
 }
