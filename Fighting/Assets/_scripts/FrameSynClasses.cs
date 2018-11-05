@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
 namespace FrameSyn
 {
+	/// <summary>
+	/// 服务器发过来的帧封装，需要外部继承
+	/// </summary>
 	public abstract class FrameObjSBase
 	{
 		private List<FrameControlerDataBase> m_ControlerDataList;
@@ -16,14 +19,12 @@ namespace FrameSyn
 		}
 	}
 
+	/// <summary>
+	/// 每个玩家的操作数据封装，需要外部继承
+	/// </summary>
 	public abstract class FrameControlerDataBase
 	{
-
-	}
-
-	public abstract class FrameObjCBase
-	{
-
+		
 	}
 
 	public abstract class FrameSynAgentBase
