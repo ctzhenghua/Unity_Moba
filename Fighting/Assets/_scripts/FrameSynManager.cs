@@ -4,10 +4,24 @@ using UnityEngine;
 
 namespace FrameSyn
 {
-	public class FrameSynManager
+	/// <summary>
+	/// 使用说明：
+	/// 
+	/// 需要做帧同步的模块需要继承自FrameSynAgentBase并实现对应接口
+	/// 需要被控制的模块需要继承自ControlAgentBase并实现对应接口
+	/// 需要发到服务器的控制数据需要继承自FrameControlDataBase并填充需要的数据
+	/// 需要从服务器获取的帧数据要继承自FrameObjSBase并填充需要的数据
+	/// 需要实现OnSendContorl回调并将数据封装成网络包发送出去
+	/// 
+	/// IsStart：是否开始帧同步
+	/// ForecastFrameNum：需要预测的帧数
+	/// HanderNumPerFrame：每帧需要处理的帧数，-1是按需自动加速
+	/// OnSendContorl：需要实现OnSendContorl回调并将数据封装成网络包发送出去
+	/// </summary>
+	public class FrameSynManager : Singleton<FrameSynManager>
 	{
 		private float m_FrameInterval = 50f/1000f;
-		private int m_CurrentFrameIndex = 0;
+		private int m_CurrentFrameIndex = -1;//0是第一帧
 		private int m_HanderNumPerFrame = -1; //-1：跟服务器差多少帧就处理多少帧，否则按num处理
 		private Dictionary<int, FrameObjSBase> m_FrameObjSDic;
 		private List<FrameSynAgentBase> m_FrameSynAgentList;
@@ -18,6 +32,9 @@ namespace FrameSyn
 		private Dictionary<int, FrameObjSBase> m_ForecastFrameObjSDic;
 		private float m_LastHandleFrameTime = 0;
 		private float m_LastSendContorlTime = 0;
+		private int m_AuxiliaryFrameTickNum = 0;
+		private int m_CurrentAuxiliaryFrameTickIndex = 0;
+		private bool m_isHandle = false;
 		private Action<Dictionary<ControlAgentBase, FrameControlDataBase>> m_OnSendContorl;
 
 		#region  属性
@@ -68,7 +85,29 @@ namespace FrameSyn
 				return m_OnSendContorl;
 			}
 		}
+
+		public int AuxiliaryFrameTickNum
+		{
+			set
+			{
+				m_AuxiliaryFrameTickNum = value;
+			}
+			get
+			{
+				return m_AuxiliaryFrameTickNum;
+			}
+		}
 		#endregion
+
+
+		private FrameSynManager()
+		{
+			m_FrameObjSDic = new Dictionary<int, FrameObjSBase>();
+			m_FrameSynAgentList = new List<FrameSynAgentBase>();
+			m_ContolAgentList = new List<ControlAgentBase>();
+			m_ControlFrameObjCDList = new Dictionary<ControlAgentBase, FrameControlDataBase>();
+			m_ForecastFrameObjSDic = new Dictionary<int, FrameObjSBase>();
+		}
 
 		/// <summary>
 		/// 主循环，由外部驱动，比如Unity的Update
@@ -83,28 +122,46 @@ namespace FrameSyn
 		private void HandleServerFrame()
 		{
 			//获取服务器发过来的帧索引
+			int WantRealFrame = m_CurrentFrameIndex + 1;
 			int currentForcastIndex = m_ForecastFrameObjSDic.Count;
-			int serverFrameIndex = m_CurrentFrameIndex - currentForcastIndex;
-			int frameCountOffset = m_FrameObjSDic.Count - serverFrameIndex;
+			int WantServerFrameIndex = WantRealFrame - currentForcastIndex;
+			int frameCountOffset = m_FrameObjSDic.Count - WantServerFrameIndex;
 
 			if (m_HanderNumPerFrame == -1)
 				m_HanderNumPerFrame = frameCountOffset;
 			else
-				m_HanderNumPerFrame = m_HanderNumPerFrame <= frameCountOffset ? m_HanderNumPerFrame : 1;
+				m_HanderNumPerFrame = m_HanderNumPerFrame <= frameCountOffset ? m_HanderNumPerFrame : 0;
+
+			//处理了逻辑帧tick后如果有辅助帧tick则处理
+			if (m_isHandle && m_CurrentAuxiliaryFrameTickIndex < m_AuxiliaryFrameTickNum)
+			{
+				m_CurrentAuxiliaryFrameTickIndex++;
+				var CurrentFrame = GetCurrentRealFrame();
+				m_FrameSynAgentList.ForEach(frameAgent =>
+				{
+					var auxiliaryFuncList = frameAgent.AuxiliaryFrameTickFuncList;
+					if (auxiliaryFuncList.Count > m_CurrentAuxiliaryFrameTickIndex)
+						auxiliaryFuncList[m_CurrentAuxiliaryFrameTickIndex](CurrentFrame);
+				});
+			}
+			else
+				m_isHandle = false;
 
 			for (var i = 0; i < m_HanderNumPerFrame; ++i)
 			{
+				WantRealFrame = m_CurrentFrameIndex + 1;
 				currentForcastIndex = m_ForecastFrameObjSDic.Count;
-				serverFrameIndex = m_CurrentFrameIndex - currentForcastIndex;
-				frameCountOffset = m_FrameObjSDic.Count - serverFrameIndex;
+				WantServerFrameIndex = WantRealFrame - currentForcastIndex;
+				frameCountOffset = m_FrameObjSDic.Count - WantServerFrameIndex;
 
 				FrameObjSBase frameObjS;
-				if (m_FrameObjSDic.TryGetValue(serverFrameIndex, out frameObjS))
+				if (m_FrameObjSDic.TryGetValue(WantServerFrameIndex, out frameObjS))
 				{
+					//如果开启了预测功能
 					if (m_ForecastFrameNum > 0)
 					{
 						FrameObjSBase forcastFrameObjS;
-						if (m_ForecastFrameObjSDic.TryGetValue(serverFrameIndex, out forcastFrameObjS))
+						if (m_ForecastFrameObjSDic.TryGetValue(WantServerFrameIndex, out forcastFrameObjS))
 						{
 							if (forcastFrameObjS.CompareTo(frameObjS))
 							{
@@ -116,10 +173,10 @@ namespace FrameSyn
 								//服务器帧跟预测帧不一致，则回退快照
 								currentForcastIndex = 0;
 								m_ForecastFrameObjSDic.Clear();
-								m_CurrentFrameIndex = serverFrameIndex;
+								m_CurrentFrameIndex = WantServerFrameIndex - 1;
 								m_FrameSynAgentList.ForEach(frameAgent =>
 								{
-									frameAgent.ReverToSnapShot(m_CurrentFrameIndex - 1);
+									frameAgent.ReverToSnapShot(m_CurrentFrameIndex);
 									frameAgent.ClearSnapShot();
 								});
 
@@ -131,35 +188,68 @@ namespace FrameSyn
 							Debug.LogError("no forecast frame!");
 						}
 					}
+					//没开启预测则正常处理
 					else
 					{
+						//如果到下一个逻辑帧要处理了辅助帧还没处理就先把辅助帧处理完
+						if (m_isHandle && m_CurrentAuxiliaryFrameTickIndex < m_AuxiliaryFrameTickNum)
+						{
+							var CurrentFrame = GetCurrentRealFrame();
+							for (; m_CurrentAuxiliaryFrameTickIndex < m_AuxiliaryFrameTickNum; ++m_CurrentAuxiliaryFrameTickIndex)
+							{
+								m_FrameSynAgentList.ForEach(frameAgent =>
+								{
+									var auxiliaryFuncList = frameAgent.AuxiliaryFrameTickFuncList;
+									if (auxiliaryFuncList.Count > m_CurrentAuxiliaryFrameTickIndex)
+										auxiliaryFuncList[m_CurrentAuxiliaryFrameTickIndex](CurrentFrame);
+								});
+							}
+						}
 						CommonHandleFrameImp(frameObjS);
 					}
 				}
+			}
 
-				if (m_ForecastFrameNum > 0)
+			if (m_ForecastFrameNum > 0)
+			{
+				//每一个服务器帧间隔时间就做一次预测
+				if (Time.time - m_LastHandleFrameTime > m_FrameInterval)
 				{
-					//每一个服务器帧间隔时间就做一次预测
-					if (Time.time - m_LastHandleFrameTime > m_FrameInterval)
+					FrameObjSBase forcastFrameObjS;
+					if (!m_ForecastFrameObjSDic.TryGetValue(WantRealFrame, out forcastFrameObjS))
 					{
-						FrameObjSBase forcastFrameObjS;
-						if (!m_ForecastFrameObjSDic.TryGetValue(m_CurrentFrameIndex, out forcastFrameObjS))
-						{
-							forcastFrameObjS = m_FrameObjSDic[serverFrameIndex - 1];
-							m_ForecastFrameObjSDic.Add(m_CurrentFrameIndex, forcastFrameObjS);
-						}
-						m_FrameSynAgentList.ForEach(frameAgent =>
-						{
-							frameAgent.SaveToSnapShot(m_CurrentFrameIndex - 1);
-						});
-						CommonHandleFrameImp(forcastFrameObjS);
+						forcastFrameObjS = m_FrameObjSDic[WantServerFrameIndex - 1];
+						m_ForecastFrameObjSDic.Add(WantRealFrame, forcastFrameObjS);
 					}
+
+					//如果到下一个逻辑帧要处理了辅助帧还没处理就先把辅助帧处理完
+					if (m_isHandle && m_CurrentAuxiliaryFrameTickIndex < m_AuxiliaryFrameTickNum)
+					{
+						var CurrentFrame = GetCurrentRealFrame();
+						for (; m_CurrentAuxiliaryFrameTickIndex < m_AuxiliaryFrameTickNum; ++m_CurrentAuxiliaryFrameTickIndex)
+						{
+							m_FrameSynAgentList.ForEach(frameAgent =>
+							{
+								var auxiliaryFuncList = frameAgent.AuxiliaryFrameTickFuncList;
+								if (auxiliaryFuncList.Count > m_CurrentAuxiliaryFrameTickIndex)
+									auxiliaryFuncList[m_CurrentAuxiliaryFrameTickIndex](CurrentFrame);
+							});
+						}
+					}
+
+					m_FrameSynAgentList.ForEach(frameAgent =>
+					{
+						frameAgent.SaveToSnapShot(WantRealFrame - 1);
+					});
+					CommonHandleFrameImp(forcastFrameObjS);
 				}
 			}
 		}
 
 		private void CommonHandleFrameImp(FrameObjSBase frameObjS)
 		{
+			m_CurrentFrameIndex++;
+
 			//先进行操作帧处理
 			frameObjS.ControlDataList.ForEach(controlData =>
 			{
@@ -178,7 +268,8 @@ namespace FrameSyn
 				frameAgent.FrameTick(frameObjS);
 			});
 			m_LastHandleFrameTime = Time.time;
-			m_CurrentFrameIndex++;
+			m_isHandle = true;
+			m_CurrentAuxiliaryFrameTickIndex = 0;
 		}
 
 		/// <summary>
@@ -224,6 +315,18 @@ namespace FrameSyn
 					}
 				}
 				m_ControlFrameObjCDList.Clear();
+			}
+		}
+
+		public FrameObjSBase GetCurrentRealFrame()
+		{
+			if (m_ForecastFrameNum > 0)
+			{
+				return m_ForecastFrameObjSDic[m_CurrentFrameIndex];
+			}
+			else
+			{
+				return m_FrameObjSDic[m_CurrentFrameIndex];
 			}
 		}
 

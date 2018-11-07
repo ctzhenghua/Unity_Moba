@@ -1,22 +1,31 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace OfflineServer
 {
-	public class OfflineServerManager
+	public class OfflineServerManager : Singleton<OfflineServerManager>
 	{
 		public class FrameObj
 		{
-			private List<FrameControlData> m_ControlerDataList;
+			private List<FrameControlData> m_ControlDataList;
 
 			public int FrameIndex { protected set; get; }
 			public int SendTime { protected set; get; }
-			public List<FrameControlData> ControlerDataList { get { return m_ControlerDataList; } }
-
-			public void AddControlerData(FrameControlData controlerData)
+			public List<FrameControlData> ControlDataList
 			{
-				m_ControlerDataList.Add(controlerData);
+				get
+				{
+					if (m_ControlDataList == null)
+						m_ControlDataList = new List<FrameControlData>();
+					return m_ControlDataList;
+				}
+			}
+
+			public void AddControlData(FrameControlData controlData)
+			{
+				m_ControlDataList.Add(controlData);
 			}
 		}
 
@@ -25,16 +34,38 @@ namespace OfflineServer
 
 		}
 
-		public class ControlAgent
-		{
-
-		}
-
 		private float m_FrameInterval = 50f / 1000f;
 		private float m_LastSendFrameTime = 0;
 		private bool m_IsStart = false;
 		private int m_CurrentFrameIndex = 0;
-		private Dictionary<ControlAgent, FrameControlData> m_ControlDataList;
+		private List<FrameControlData> m_ControlDataList;
+		private float m_NetConditionParam = 0f;
+
+		#region 属性
+		public bool IsStart
+		{
+			set
+			{
+				m_IsStart = value;
+			}
+			get
+			{
+				return m_IsStart;
+			}
+		}
+
+		public float NetConditionParam
+		{
+			set
+			{
+				m_NetConditionParam = value;
+			}
+			get
+			{
+				return m_NetConditionParam;
+			}
+		}
+		#endregion
 
 		public void Tick()
 		{
@@ -43,27 +74,30 @@ namespace OfflineServer
 			{
 				m_LastSendFrameTime = Time.time;
 				FrameObj frame = new FrameObj();
-				foreach (var conrolData in m_ControlDataList.Values)
+				foreach (var conrolData in m_ControlDataList)
 				{
-					frame.AddControlerData(controlerData);
+					frame.AddControlData(conrolData);
 				}
+				SendFrame(frame);
+				m_ControlDataList.Clear();
 			}
-
-			SendFrame(frame);
 		}
 
 		/// <summary>
 		/// 发送数据并模拟网络状况
 		/// </summary>
 		/// <param name="frame"></param>
-		public void SendFrame(FrameObj frame)
+		public IEnumerator SendFrame(FrameObj frame)
 		{
+			float netConditionOffset = m_NetConditionParam * Mathf.Sin(Time.time);
+			if (netConditionOffset >=0 )
+				yield return new WaitForSeconds(netConditionOffset);
 
 		}
 
 		public void RiceveControl(FrameControlData controlData)
 		{
-
+			m_ControlDataList.Add(controlData);
 		}
 	}
 }

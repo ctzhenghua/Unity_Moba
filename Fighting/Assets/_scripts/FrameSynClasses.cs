@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 namespace FrameSyn
 {
 	/// <summary>
@@ -10,7 +11,15 @@ namespace FrameSyn
 
 		public int FrameIndex { protected set; get; }
 		public int ArriveTime { protected set; get; }
-		public List<FrameControlDataBase> ControlDataList { get { return m_ControlDataList; } }
+		public List<FrameControlDataBase> ControlDataList
+		{
+			get
+			{
+				if (m_ControlDataList == null)
+					m_ControlDataList = new List<FrameControlDataBase>();
+				return m_ControlDataList;
+			}
+		}
 
 		abstract public bool CompareTo(FrameObjSBase frameObj);
 		public void AddControlData(FrameControlDataBase controlData)
@@ -29,6 +38,20 @@ namespace FrameSyn
 
 	public abstract class FrameSynAgentBase
 	{
+		private List<Action<FrameObjSBase>> m_AuxiliaryFrameTickFuncList;
+		public List<Action<FrameObjSBase>> AuxiliaryFrameTickFuncList
+		{
+			set
+			{
+				AuxiliaryFrameTickFuncList = value;
+			}
+			get
+			{
+				if (AuxiliaryFrameTickFuncList == null)
+					AuxiliaryFrameTickFuncList = new List<Action<FrameObjSBase>>();
+				return AuxiliaryFrameTickFuncList;
+			}
+		}
 		abstract public void FrameTick(FrameObjSBase frameObj);
 		abstract public void ReverToSnapShot(int frameIndex);
 		abstract public void SaveToSnapShot(int frameIndex);
