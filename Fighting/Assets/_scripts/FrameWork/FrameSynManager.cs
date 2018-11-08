@@ -17,6 +17,7 @@ namespace FrameSyn
 	/// ForecastFrameNum：需要预测的帧数
 	/// HanderNumPerFrame：每帧需要处理的帧数，-1是按需自动加速
 	/// OnSendContorl：需要实现OnSendContorl回调并将数据封装成网络包发送出去
+	/// //AuxiliaryFrameTickNum:辅助帧数量
 	/// </summary>
 	public class FrameSynManager : Singleton<FrameSynManager>
 	{
